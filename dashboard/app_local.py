@@ -7,7 +7,7 @@ import requests
 from groq import Groq
 from dotenv import load_dotenv
 from langchain_core.documents import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # -----------------------------------
 # LOAD ENV
