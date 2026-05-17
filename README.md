@@ -263,6 +263,40 @@ Without retrieval grounding, the model frequently generated:
 - inconsistent eligibility information
 
 ---
+## ⚠️ GraphRAG Performance Note
+
+The current GraphRAG benchmark should be interpreted as an MVP prototype evaluation rather than a fully optimized production GraphRAG deployment.
+
+During experimentation, the local TigerGraph GraphRAG application consistently produced stronger responses than the lightweight custom dashboard integration. This difference was primarily due to infrastructure and inference constraints, including:
+
+- Groq free-tier token-per-minute rate limits during graph extraction
+- long-running graph rebuild times on large corpora
+- partial graph construction during intermediate evaluations
+- simplified API integration inside the custom dashboard
+- reduced retrieval orchestration compared to the native TigerGraph GraphRAG UI
+
+As a result, the full capabilities of TigerGraph GraphRAG were not completely exploited in the benchmarked dashboard environment.
+
+The native localhost GraphRAG application demonstrated:
+- richer graph-grounded retrieval
+- better multi-hop reasoning
+- improved entity-aware responses
+- more accurate eligibility-based retrieval
+
+This project therefore reflects:
+- a realistic resource-constrained MVP GraphRAG deployment
+- early-stage benchmarking under limited inference budgets
+- practical infrastructure tradeoffs between vector RAG and graph RAG systems
+
+Future iterations with:
+- higher inference throughput
+- optimized graph extraction
+- stronger retrieval orchestration
+- dedicated backend infrastructure
+
+would likely improve GraphRAG performance substantially.
+---
+
 
 # 🛠️ Tech Stack
 
