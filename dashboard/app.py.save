@@ -1,0 +1,452 @@
+import streamlit as st
+import time
+from groq import Groq
+from dotenv import load_dotenv
+import os
+import sys
+import requests
+
+# -----------------------------------
+# LOAD ENV
+# -----------------------------------
+
+load_dotenv()
+
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
+)
+
+# -----------------------------------
+# IMPORT BASIC RAG
+# -----------------------------------
+
+sys.path.append("/home/mehak2006/gov-graphrag/basic_rag")
+
+from rag_pipeline import (
+    load_pdf,
+    create_documents,
+    create_embeddings,
+    create_vectorstore,
+    retrieve_documents,
+    create_context,
+    generate_answer
+)
+
+# -----------------------------------
+# PAGE CONFIG
+# -----------------------------------
+
+st.set_page_config(
+    page_title="GraphRAG Benchmark Dashboard",
+    layout="wide"
+)
+
+st.title("GraphRAG vs Basic RAG vs LLM Benchmark")
+
+st.write(
+    "Real-time comparison of LLM-only, Basic RAG, and GraphRAG pipelines."
+)
+
+# -----------------------------------
+# LOAD BASIC RAG VECTORSTORE
+# -----------------------------------
+
+@st.cache_resource
+def setup_rag():
+
+    pdf_path = "/home/mehak2006/gov-graphrag/basic_rag/data/schemes.pdf"
+
+    full_text = load_pdf(pdf_path)
+
+    documents = create_documents(full_text)
+
+    embeddings = create_embeddings()
+
+    vectorstore = create_vectorstore(
+        documents,
+        embeddings
+    )
+
+    return vectorstore
+
+vectorstore = setup_rag()
+
+# -----------------------------------
+# QUERY INPUT
+# -----------------------------------
+
+query = st.text_input("Enter Query")
+
+# -----------------------------------
+# MAIN PIPELINES
+# -----------------------------------
+
+if query:
+
+    col1, col2, col3 = st.columns(3)
+
+    # ===================================
+    # PIPELINE 1 — LLM ONLY
+    # ===================================
+
+    llm_start = time.time()
+
+    llm_response = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": query
+            }
+        ],
+        model="llama-3.1-8b-instant"
+    )
+
+    llm_time = time.time() - llm_start
+
+    llm_answer = llm_response.choices[0].message.content
+
+    # ===================================
+    # PIPELINE 2 — BASIC RAG
+    # ===================================
+
+    results, retrieval_time = retrieve_documents(
+        vectorstore,
+        query
+    )
+
+    context = create_context(results)
+
+    rag_answer, rag_llm_time, rag_token_metrics = generate_answer(
+        query,
+        context
+    )
+
+    rag_total_time = retrieval_time + rag_llm_time
+
+    # ===================================
+    # PIPELINE 3 — GRAPH RAG
+    # ===================================
+
+    graph_start = time.time()
+
+    try:
+
+        response = requests.get(
+            "http://localhost:8000/ui/scheme_eligibility_req/query",
+            params={
+                "query": query
+            },
+            auth=("tigergraph", "tigergraph")
+        )
+
+        graph_time = time.time() - graph_start
+
+        graph_json = response.json()
+
+        if isinstance(graph_json, str):
+
+            graph_answer = graph_json
+
+            graph_json = {}
+
+        else:
+
+            graph_answer = graph_json.get(
+                "content",
+                "No response"
+            )
+
+    except Exception as e:
+
+        graph_time = 0
+
+        graph_answer = f"GraphRAG Error: {e}"
+
+        graph_json = {}
+
+    # ===================================
+    # DISPLAY — LLM ONLY
+    # ===================================
+
+    with col1:
+
+        st.subheader("LLM Only")
+
+        st.write(llm_answer)
+
+        st.subheader("Metrics")
+
+        st.json({
+            "latency_seconds": round(llm_time, 2),
+            "prompt_tokens": llm_response.usage.prompt_tokens,
+            "completion_tokens": llm_response.usage.completion_tokens,
+            "total_tokens": llm_response.usage.total_tokens
+        })
+
+    # ===================================
+    # DISPLAY — BASIC RAG
+    # ===================================
+
+    with col2:
+
+        st.subheader("Basic RAG")
+
+        st.write(rag_answer)
+
+        st.subheader("Metrics")
+
+        st.json({
+            "retrieval_time_seconds": round(retrieval_time, 2),
+            "llm_time_seconds": round(rag_llm_time, 2),
+            "total_latency_seconds": round(rag_total_time, 2),
+            "chunks_retrieved": len(results),
+            "context_length": len(context),
+            "prompt_tokens": rag_token_metrics["prompt_tokens"],
+            "completion_tokens": rag_token_metrics["completion_tokens"],
+            "total_tokens": rag_token_metrics["total_tokens"]
+        })
+
+    # ===================================
+    # DISPLAY — GRAPH RAG
+    # ===================================
+
+    with col3:
+
+        st.subheader("GraphRAG")
+
+        st.write(graph_answer)
+
+        st.subheader("Metrics")
+
+        st.json({
+            "latency_seconds": round(graph_time, 2),
+            "answered_question": graph_json.get("answered_question"),
+            "response_type": graph_json.get("response_type"),
+            "backend_response_time": graph_json.get("response_time")
+        })
+import streamlit as st
+import time
+from groq import Groq
+from dotenv import load_dotenv
+import os
+import sys
+import requests
+
+# -----------------------------------
+# LOAD ENV
+# -----------------------------------
+
+load_dotenv()
+
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
+)
+
+# -----------------------------------
+# IMPORT BASIC RAG
+# -----------------------------------
+
+sys.path.append("/home/mehak2006/gov-graphrag/basic_rag")
+
+from rag_pipeline import (
+    load_pdf,
+    create_documents,
+    create_embeddings,
+    create_vectorstore,
+    retrieve_documents,
+    create_context,
+    generate_answer
+)
+
+# -----------------------------------
+# PAGE CONFIG
+# -----------------------------------
+
+st.set_page_config(
+    page_title="GraphRAG Benchmark Dashboard",
+    layout="wide"
+)
+
+st.title("GraphRAG vs Basic RAG vs LLM Benchmark")
+
+st.write(
+    "Real-time comparison of LLM-only, Basic RAG, and GraphRAG pipelines."
+)
+
+# -----------------------------------
+# LOAD BASIC RAG VECTORSTORE
+# -----------------------------------
+
+@st.cache_resource
+def setup_rag():
+
+    pdf_path = "/home/mehak2006/gov-graphrag/basic_rag/data/schemes.pdf"
+
+    full_text = load_pdf(pdf_path)
+
+    documents = create_documents(full_text)
+
+    embeddings = create_embeddings()
+
+    vectorstore = create_vectorstore(
+        documents,
+        embeddings
+    )
+
+    return vectorstore
+
+vectorstore = setup_rag()
+
+# -----------------------------------
+# QUERY INPUT
+# -----------------------------------
+
+query = st.text_input("Enter Query")
+
+# -----------------------------------
+# MAIN PIPELINES
+# -----------------------------------
+
+if query:
+
+    col1, col2, col3 = st.columns(3)
+
+    # ===================================
+    # PIPELINE 1 — LLM ONLY
+    # ===================================
+
+    llm_start = time.time()
+
+    llm_response = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": query
+            }
+        ],
+        model="llama-3.1-8b-instant"
+    )
+
+    llm_time = time.time() - llm_start
+
+    llm_answer = llm_response.choices[0].message.content
+
+    # ===================================
+    # PIPELINE 2 — BASIC RAG
+    # ===================================
+
+    results, retrieval_time = retrieve_documents(
+        vectorstore,
+        query
+    )
+
+    context = create_context(results)
+
+    rag_answer, rag_llm_time, rag_token_metrics = generate_answer(
+        query,
+        context
+    )
+
+    rag_total_time = retrieval_time + rag_llm_time
+
+    # ===================================
+    # PIPELINE 3 — GRAPH RAG
+    # ===================================
+
+    graph_start = time.time()
+
+    try:
+
+        response = requests.get(
+            "http://localhost:8000/ui/scheme_eligibility_req/query",
+            params={
+                "query": query
+            },
+            auth=("tigergraph", "tigergraph")
+        )
+
+        graph_time = time.time() - graph_start
+
+        graph_json = response.json()
+
+        if isinstance(graph_json, str):
+
+            graph_answer = graph_json
+
+            graph_json = {}
+
+        else:
+
+            graph_answer = graph_json.get(
+                "content",
+                "No response"
+            )
+
+    except Exception as e:
+
+        graph_time = 0
+
+        graph_answer = f"GraphRAG Error: {e}"
+
+        graph_json = {}
+
+    # ===================================
+    # DISPLAY — LLM ONLY
+    # ===================================
+
+    with col1:
+
+        st.subheader("LLM Only")
+
+        st.write(llm_answer)
+
+        st.subheader("Metrics")
+
+        st.json({
+            "latency_seconds": round(llm_time, 2),
+            "prompt_tokens": llm_response.usage.prompt_tokens,
+            "completion_tokens": llm_response.usage.completion_tokens,
+            "total_tokens": llm_response.usage.total_tokens
+        })
+
+    # ===================================
+    # DISPLAY — BASIC RAG
+    # ===================================
+
+    with col2:
+
+        st.subheader("Basic RAG")
+
+        st.write(rag_answer)
+
+        st.subheader("Metrics")
+
+        st.json({
+            "retrieval_time_seconds": round(retrieval_time, 2),
+            "llm_time_seconds": round(rag_llm_time, 2),
+            "total_latency_seconds": round(rag_total_time, 2),
+            "chunks_retrieved": len(results),
+            "context_length": len(context),
+            "prompt_tokens": rag_token_metrics["prompt_tokens"],
+            "completion_tokens": rag_token_metrics["completion_tokens"],
+            "total_tokens": rag_token_metrics["total_tokens"]
+        })
+
+    # ===================================
+    # DISPLAY — GRAPH RAG
+    # ===================================
+
+    with col3:
+
+        st.subheader("GraphRAG")
+
+        st.write(graph_answer)
+
+        st.subheader("Metrics")
+
+        st.json({
+            "latency_seconds": round(graph_time, 2),
+            "answered_question": graph_json.get("answered_question"),
+            "response_type": graph_json.get("response_type"),
+            "backend_response_time": graph_json.get("response_time")
+        })
