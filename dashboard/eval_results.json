@@ -1,0 +1,71 @@
+{
+  "questions_evaluated": 15,
+  "llm_only": {
+    "llm_judge_pass_rate": 0.0,
+    "llm_judge_passes": 0,
+    "bertscore_f1_rescaled": -0.174
+  },
+  "basic_rag": {
+    "llm_judge_pass_rate": 0.0,
+    "llm_judge_passes": 0,
+    "bertscore_f1_rescaled": -0.174
+  },
+  "graphrag": {
+    "llm_judge_pass_rate": 0.0,
+    "llm_judge_passes": 0,
+    "bertscore_f1_rescaled": -0.174
+  },
+  "raw_answers": {
+    "llm_only": [
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer"
+    ],
+    "basic_rag": [
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer"
+    ],
+    "graphrag": [
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer",
+      "No answer"
+    ]
+  }
+}
