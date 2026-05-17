@@ -2,11 +2,6 @@ streamlit
 groq
 python-dotenv
 langchain
-langchain-core
 langchain-community
-langchain-huggingface
-sentence-transformers
-faiss-cpu
-pypdf
 requests
-torch==2.2.2
+pypdf
