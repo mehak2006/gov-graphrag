@@ -21,7 +21,11 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 # IMPORT BASIC RAG (only what we need)
 # -----------------------------------
 
-sys.path.append("/home/mehak2006/gov-graphrag/basic_rag")
+import sys
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(BASE_DIR, "basic_rag"))
 
 from rag_pipeline import (
     create_embeddings,
